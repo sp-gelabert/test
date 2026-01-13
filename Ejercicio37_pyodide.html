@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actividad Interactiva Python</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --bg-dark: #282a36;
+            --console-bg: #1e1e1e;
+        }
+        body, html { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; background-color: #f0f0f0; }
+        .main-container { display: flex; height: 100vh; flex-direction: row; }
+        .left-panel { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #ccc; min-width: 300px; }
+        .editor-header { background-color: #e9ecef; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dee2e6; }
+        .btn-run { background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .btn-run:disabled { background-color: #6c757d; cursor: not-allowed; }
+        #code-editor { flex-grow: 1; font-size: 14px; }
+        .CodeMirror { height: 100%; font-family: 'Consolas', monospace; }
+        .right-panel { flex: 1; display: flex; flex-direction: column; background-color: white; min-width: 300px; }
+        .tabs { display: flex; background-color: #e9ecef; border-bottom: 1px solid #dee2e6; }
+        .tab-btn { padding: 12px 20px; border: none; background: none; cursor: pointer; font-weight: 600; color: #6c757d; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); background-color: white; }
+        .tab-content { display: none; flex-grow: 1; padding: 20px; overflow-y: auto; }
+        .tab-content.active { display: block; }
+        #instructions-content code { background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px; border: 1px solid #dee2e6; font-family: monospace; color: #d63384; }
+        #console-panel { background-color: var(--console-bg); display: flex; flex-direction: column; min-height: 100%; }
+        #console-output { flex-grow: 1; padding: 15px; font-family: 'Consolas', monospace; color: white; white-space: pre-wrap; font-size: 14px; }
+        .console-error { color: #ff5555; }
+        .console-input-line { color: #f1fa8c; display: flex; }
+        #console-input { background: transparent; border: none; color: white; font-family: 'Consolas', monospace; font-size: 14px; outline: none; flex-grow: 1; width: 100%; }
+        #loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @media (max-width: 768px) { .main-container { flex-direction: column; } .left-panel, .right-panel { height: 50%; } }
+    </style>
+</head>
+<body>
+
+<textarea id="initial-code" style="display: none;">
+    <!--............................... ACA VA EL CODIGO DE BASE DEL EJERCICIO ............................-->
+    <!--...................................................................................................-->
+# EJERCICIO 37
+# Definición de las funciones (copia y pega aquí tus funciones)
+def agregar_tarea(tareas, tarea_nueva):
+    pass
+
+def mostrar_tareas(tareas):
+    pass
+
+def eliminar_tarea(tareas, tarea_a_borrar):
+    pass
+
+# --- Código de prueba ---
+
+print("--- Gestión de Tareas ---")
+
+# 1. Creamos una cadena de tareas vacía
+mis_tareas = ""
+print(f"Lista inicial: '{mis_tareas}'")
+
+# 2. Agregamos algunas tareas
+print("\n>>> Agregando tareas...")
+mis_tareas = agregar_tarea(mis_tareas, "Estudiar Python")
+#Por teclado
+mis_tareas = agregar_tarea(mis_tareas, input("Ingrese una tarea"))
+
+# 3. Mostramos la lista de tareas
+print(">>> Mostrando tareas:")
+mostrar_tareas(mis_tareas) # Debería imprimir: Estudiar Python, Hacer ejercicio, Comprar pan
+
+# 4. Intentamos eliminar una tarea
+mis_tareas = eliminar_tarea(mis_tareas, input("\n>>> Escribe para eliminard 'Estudiar Python'..."))
+
+# 5. Mostramos la lista de nuevo
+print(">>> Mostrando tareas después de eliminar:")
+mostrar_tareas(mis_tareas) # Debería imprimir: Estudiar Python, Comprar pan
+
+#Si necesitas mas pruebas copia y pega los pasos del 2 al 5 
+    <!--...................................................................................................-->
+    <!--...................................................................................................-->
+</textarea>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-text">Cargando entorno Python...</div>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="editor-header">
+                <span style="font-weight:bold"><i class="fas fa-code"></i> main.py</span>
+                <button id="run-btn" class="btn-run" onclick="runPython()" disabled>
+                    <i class="fas fa-play"></i> Ejecutar
+                </button>
+            </div>
+            <div id="code-editor"></div>
+        </div>
+
+        <div class="right-panel">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="openTab('instructions')"><i class="fas fa-book"></i> Instrucciones</button>
+                <button class="tab-btn" onclick="openTab('console')"><i class="fas fa-terminal"></i> Consola</button>
+            </div>
+
+            <div id="instructions" class="tab-content active">
+                <div id="instructions-content">
+    <!--............................... ACA VA EL HTML DE LAS INSTRUCCIONES ...............................-->
+    <!--...................................................................................................-->
+<p></p><h3>📌 Ejercicio: Sistema de gestión de tareas con cadenas</h3>
+  <p>
+    Vas a programar un sistema básico de gestión de tareas en Python sin usar listas ni bucles. Todas las tareas se guardarán dentro de una sola cadena de texto, separadas por <code>", "</code>.
+  </p><p></p>
+<p></p><ol> <p></p>
+<li> <strong><code>agregar_tarea(tareas, tarea_nueva)</code></strong> </li>
+
+<p>  </p><p>Esta función se encarga de <strong>añadir una nueva tarea</strong>.</p>
+  <ul>
+   <li>Si la lista de tareas está <strong>vacía</strong> (""), devuelve solo la nueva tarea.</li>
+   <li>Si ya hay tareas, añade la nueva al final, separada por <code>", "</code>.</li>
+  </ul><p></p>
+<p></p><li> <strong><code>mostrar_tareas(tareas)</code></strong> <ul> <li>Si la cadena está vacía, imprime <code>"No hay tareas"</code>.</li> <li>Si no, imprime la cadena completa.</li>
+    <p>Esta función te ayuda a <strong>ver todas tus tareas</strong>.</p>
+    <ul>
+      <li>Si la lista está <strong>vacía</strong>, imprime "No hay tareas".</li>
+      <li>Si <strong>no</strong> está vacía, imprime la cadena completa de tareas.</li>
+    </ul><p></p>
+<p></p><li> <strong><code>eliminar_tarea(tareas, tarea_a_borrar)</code></strong> 
+    <p>Esta función sirve para <strong>borrar una tarea específica</strong>.</p>
+    <ul>
+      <li><strong>Busca</strong> si la tarea que quieres borrar se encuentra en la lista.</li>
+      <li>Si la encuentra, la elimina usando <code>replace()</code> y maneja los siguientes casos:
+        <ul>
+          <li><strong>Única tarea:</strong> Si la lista contiene solo esa tarea, devuelve una cadena vacía.</li>
+          <li><strong>Al principio:</strong> La elimina junto con la coma que la sigue.</li>
+          <li><strong>Al final:</strong> La elimina junto con la coma que la precede.</li>
+          <li><strong>En el medio:</strong> La elimina junto con la coma que la precede.</li>
+        </ul>
+      </li>
+      <li>Si <strong>no la encuentra</strong>, devuelve la cadena sin cambios.</li>
+    </ul><p></p>
+</li></ul></li></ol>
+    <!--...................................................................................................-->
+    <!--...................................................................................................-->
+                </div>
+            </div>
+
+            <div id="console" class="tab-content" style="padding:0; background-color: var(--console-bg);">
+                <div id="console-panel">
+                    <div id="console-output"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+
+    <script>
+        // --- Carga del código inicial ---
+        function getInitialCode() {
+            const raw = document.getElementById("initial-code").value;
+            return raw.replace(/^\n/, '');
+        }
+
+        var editor = CodeMirror(document.getElementById("code-editor"), {
+            mode: "python",
+            theme: "dracula",
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            indentUnit: 4,
+            value: getInitialCode(),
+            extraKeys: { "Tab": function(cm) { cm.replaceSelection("    ", "end"); } }
+        });
+
+        // --- Configuración Pyodide ---
+        let pyodide = null;
+        let pyodideReady = false;
+        const consoleOutput = document.getElementById("console-output");
+        const loadingOverlay = document.getElementById("loading-overlay");
+        const runBtn = document.getElementById("run-btn");
+
+        async function main() {
+            try {
+                pyodide = await loadPyodide();
+                pyodideReady = true;
+                loadingOverlay.style.display = "none";
+                runBtn.disabled = false;
+            } catch (err) {
+                document.getElementById("loading-text").innerText = "Error: " + err;
+            }
+        }
+        main();
+
+        // --- UI Logic ---
+        function openTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            
+            const btns = document.querySelectorAll('.tab-btn');
+            if(tabName === 'instructions') btns[0].classList.add('active');
+            else {
+                btns[1].classList.add('active');
+                const input = document.getElementById('console-input');
+                if(input) input.focus();
+            }
+        }
+
+        function addToConsole(text, isError = false) {
+            const span = document.createElement("span");
+            span.className = isError ? "console-line console-error" : "console-line";
+            span.textContent = text;
+            consoleOutput.appendChild(span);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        function clearConsole() { consoleOutput.innerHTML = ""; }
+
+        // --- Input Promise (JS Side) ---
+        window.inputPromise = function(promptText) {
+            return new Promise((resolve) => {
+                const div = document.createElement("div");
+                div.className = "console-input-line";
+                div.innerHTML = `<span style="margin-right:5px">${promptText}</span><input type="text" id="console-input" autocomplete="off">`;
+                consoleOutput.appendChild(div);
+                
+                const inputField = div.querySelector("input");
+                
+                // Pequeño timeout para asegurar que el DOM se pintó antes de hacer focus
+                setTimeout(() => {
+                    inputField.focus();
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                }, 10);
+
+                inputField.addEventListener("keydown", function(e) {
+                    if (e.key === "Enter") {
+                        const val = this.value;
+                        div.innerHTML = `<span style="margin-right:5px">${promptText}</span><span>${val}</span>`;
+                        resolve(val);
+                    }
+                });
+            });
+        }
+
+        // --- Ejecución del código ---
+        async function runPython() {
+            if (!pyodideReady) return;
+            openTab('console');
+            clearConsole();
+            
+            let userCode = editor.getValue();
+
+            // [CRÍTICO] Transformación de código para principiantes
+            // Reemplaza automáticamente input() por await input()
+            // Esto soluciona el error "coroutine was never awaited" en scripts planos.
+            userCode = userCode.replace(/\binput\s*\(/g, 'await input(');
+            
+            const wrapperCode = `
+import sys, js, asyncio
+
+# Redefinir stdout/stderr para que escriban en el HTML
+class JSConsole:
+    def write(self, text): 
+        js.addToConsole(text, False)
+    def flush(self): 
+        pass
+
+class JSErrorConsole:
+    def write(self, text): 
+        js.addToConsole(text, True)
+    def flush(self): 
+        pass
+
+sys.stdout = JSConsole()
+sys.stderr = JSErrorConsole()
+
+# Redefinición de input para usar el DOM
+async def input(prompt=""):
+    # Imprimimos el prompt explícitamente si se pasa
+    # if prompt:
+    #    print(prompt, end="") 
+    # El sleep(0) permite que el UI thread de JS actualice el DOM (pinte los prints anteriores)
+    await asyncio.sleep(0.02)
+    return await js.inputPromise(prompt)
+
+# Wrapper async principal
+async def main_wrapper():
+    try:
+        # Aquí se inyecta el código del usuario ya modificado (con await input)
+${userCode.split('\n').map(line => '        ' + line).join('\n')}
+    except Exception as e:
+        print(f"\\nError de ejecución: {e}")
+
+await main_wrapper()
+            `;
+
+            try { await pyodide.runPythonAsync(wrapperCode); } 
+            catch (err) { addToConsole(err, true); }
+        }
+
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runPython();
+        });
+    </script>
+</body>
+</html>

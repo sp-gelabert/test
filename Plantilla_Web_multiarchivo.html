@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDE Educativo Multi-Archivo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <style>
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-editor: #272822;
+            --bg-panel: #f4f4f4;
+            --primary: #007bff;
+            --tab-active-bg: #272822; /* Color de fondo del editor */
+            --tab-inactive-bg: #3c3c3c;
+            --text-light: #cccccc;
+            --border: #444;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        .container { display: flex; height: 100vh; }
+
+        /* --- PANEL IZQUIERDO (EDITOR) --- */
+        .left-panel { width: 50%; display: flex; flex-direction: column; background-color: var(--bg-dark); border-right: 2px solid #444; }
+        
+        .toolbar {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #252526; padding: 0 10px; height: 40px; border-bottom: 1px solid #111;
+        }
+        .file-tabs { display: flex; align-items: flex-end; height: 100%; overflow-x: auto; }
+        
+        /* Pestañas de Archivos (Estilo VS Code) */
+        .file-tab {
+            background-color: var(--tab-inactive-bg);
+            color: #999;
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-right: 1px solid #252526;
+            display: flex; align-items: center;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .file-tab.active {
+            background-color: var(--tab-active-bg);
+            color: white;
+            border-top: 2px solid var(--primary);
+        }
+        .file-tab:hover:not(.active) { background-color: #444; color: white; }
+
+        .btn-run {
+            background-color: #0e639c; color: white; border: none;
+            padding: 5px 12px; border-radius: 2px; cursor: pointer;
+            font-size: 0.85rem; font-weight: bold;
+        }
+        .btn-run:hover { background-color: #1177bb; }
+
+        #editor { flex-grow: 1; }
+
+        /* --- PANEL DERECHO (INFO/RESULTADO) --- */
+        .right-panel { width: 50%; display: flex; flex-direction: column; background-color: var(--bg-panel); }
+        .tabs { display: flex; background-color: #e0e0e0; border-bottom: 1px solid #ccc; }
+        .tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-weight: 600; color: #555; }
+        .tab.active { background-color: var(--bg-panel); color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .tab-pane { display: none; height: 100%; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        .tab-pane.active { display: block; }
+        
+        /* Iframe y Contenido */
+        #result-frame { width: 100%; height: 100%; border: none; background: white; }
+        .instructions-body { line-height: 1.6; color: #333; }
+        .instructions-body code { background: #eee; padding: 2px 5px; border-radius: 3px; color: #d63384; }
+
+        @media (max-width: 768px) { .container { flex-direction: column; } .left-panel, .right-panel { width: 100%; height: 50%; } }
+    </style>
+</head>
+<body>
+
+<script type="text/template" data-filename="index.html" data-mode="html">
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ejercicio Multi-archivo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Hola Mundo Multi-archivo</h1>
+    <p id="demo">El texto cambiará si JS funciona.</p>
+    <button onclick="cambiarTexto()">Probar JS</button>
+
+    <script src="script.js"><\/script>
+
+</body>
+</html>
+</script>
+
+<script type="text/template" data-filename="style.css" data-mode="css">
+/* Escribe tus estilos aquí */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f8ff;
+}
+
+h1 {
+    color: navy;
+    text-align: center;
+}
+</script>
+
+<script type="text/template" data-filename="script.js" data-mode="javascript">
+// Escribe tu lógica JS aquí
+function cambiarTexto() {
+    console.log("Función ejecutada");
+    document.getElementById("demo").innerText = "¡Javascript y CSS están conectados correctamente!";
+    document.getElementById("demo").style.color = "green";
+    document.getElementById("demo").style.fontWeight = "bold";
+}
+</script>
+
+<script id="template-instructions" type="text/template">
+    <h2>Ejercicio: Conectando archivos</h2>
+    <p>En este ejercicio simularás un proyecto web real con archivos separados.</p>
+    <ol>
+        <li>Navega por las pestañas superiores del editor (<code>index.html</code>, <code>style.css</code>, <code>script.js</code>).</li>
+        <li>En <code>style.css</code>, cambia el color de fondo del <code>body</code> a otro color.</li>
+        <li>En <code>index.html</code>, asegúrate de que el archivo CSS esté correctamente vinculado (busca la etiqueta <code>&lt;link&gt;</code>).</li>
+        <li>Presiona el botón <strong>Ejecutar</strong> para ver cómo interactúan los tres archivos.</li>
+    </ol>
+</script>
+
+<div class="container">
+    <div class="left-panel">
+        <div class="toolbar">
+            <div class="file-tabs" id="file-tabs-container">
+                </div>
+            <button class="btn-run" onclick="runCode()">&#9658; Ejecutar</button>
+        </div>
+        <div id="editor"></div>
+    </div>
+
+    <div class="right-panel">
+        <div class="tabs">
+            <button class="tab active" onclick="switchRightTab('tab-instructions', this)">Instrucciones</button>
+            <button class="tab" onclick="switchRightTab('tab-result', this)" id="btn-tab-result">Resultado</button>
+        </div>
+        <div class="panel-content" style="flex-grow:1; position:relative;">
+            <div id="tab-instructions" class="tab-pane active">
+                <div id="instructions-content" class="instructions-body"></div>
+            </div>
+            <div id="tab-result" class="tab-pane" style="padding:0;">
+                <iframe id="result-frame"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- GESTIÓN DE ESTADO ---
+    let editor;
+    // files: Objeto para guardar contenido y configuración de cada archivo
+    // estructura: { "nombre.ext": { content: "...", mode: "...", session: AceSession } }
+    let files = {}; 
+    let activeFileName = "";
+
+    window.onload = function() {
+        initEditor();
+        loadFilesFromTemplates();
+        renderFileTabs();
+        loadInstructions();
+        
+        // Seleccionar el primer archivo por defecto (generalmente index.html)
+        const firstFile = Object.keys(files)[0];
+        if(firstFile) switchFile(firstFile);
+
+        runCode(false); // Ejecución silenciosa inicial
+    };
+
+    function initEditor() {
+        editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.setOptions({
+            fontSize: "14px",
+            tabSize: 4,
+            useSoftTabs: true,
+            showPrintMargin: false
+        });
+    }
+
+    // Leer los templates HTML definidos por el profesor
+    function loadFilesFromTemplates() {
+        const templates = document.querySelectorAll('script[data-filename]');
+        templates.forEach(tmpl => {
+            const name = tmpl.getAttribute('data-filename');
+            const mode = tmpl.getAttribute('data-mode');
+            // .trim() solo al principio para no romper identación interna
+            const content = tmpl.innerHTML.replace(/^\n/, ''); 
+            
+            // Creamos una sesión de Ace para cada archivo (preserva historial de undo/redo por archivo)
+            const session = ace.createEditSession(content);
+            session.setMode("ace/mode/" + mode);
+            session.setUseSoftTabs(true);
+            session.setTabSize(4);
+
+            files[name] = {
+                mode: mode,
+                session: session
+            };
+        });
+    }
+
+    // Dibujar pestañas superiores del editor
+    function renderFileTabs() {
+        const container = document.getElementById('file-tabs-container');
+        container.innerHTML = '';
+        
+        Object.keys(files).forEach(filename => {
+            const btn = document.createElement('div');
+            btn.className = 'file-tab';
+            btn.textContent = filename;
+            btn.onclick = () => switchFile(filename);
+            btn.dataset.name = filename;
+            container.appendChild(btn);
+        });
+    }
+
+    // Cambiar archivo visible en el editor
+    function switchFile(filename) {
+        activeFileName = filename;
+        
+        // Cambiar sesión del editor
+        editor.setSession(files[filename].session);
+        
+        // Actualizar UI pestañas
+        document.querySelectorAll('.file-tab').forEach(tab => {
+            if (tab.dataset.name === filename) tab.classList.add('active');
+            else tab.classList.remove('active');
+        });
+    }
+
+    function loadInstructions() {
+        const inst = document.getElementById('template-instructions').innerHTML;
+        document.getElementById('instructions-content').innerHTML = inst;
+    }
+
+    // --- LÓGICA DE EJECUCIÓN (VIRTUAL FILE SYSTEM) ---
+    function runCode(switchToResult = true) {
+        // 1. Obtener contenido actual de index.html
+        if (!files['index.html']) {
+            alert("Error: Falta el archivo index.html");
+            return;
+        }
+        let htmlContent = files['index.html'].session.getValue();
+
+        // 2. Procesar otros archivos (CSS/JS) para crear Blobs
+        Object.keys(files).forEach(filename => {
+            if (filename === 'index.html') return;
+
+            const content = files[filename].session.getValue();
+            let mimeType = 'text/plain';
+            if (filename.endsWith('.css')) mimeType = 'text/css';
+            if (filename.endsWith('.js')) mimeType = 'text/javascript';
+
+            // Crear Blob
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+
+            // 3. Reemplazar referencias en el HTML
+            // Buscamos href="style.css" o src="script.js" y lo cambiamos por la URL del blob
+            // Usamos regex simple (se puede mejorar para casos complejos, pero funciona para educación)
+            const regexHref = new RegExp(`href=["']${filename}["']`, 'g');
+            const regexSrc = new RegExp(`src=["']${filename}["']`, 'g');
+            
+            htmlContent = htmlContent.replace(regexHref, `href="${url}"`);
+            htmlContent = htmlContent.replace(regexSrc, `src="${url}"`);
+        });
+
+        // 4. Inyectar en el iFrame
+        const iframe = document.getElementById('result-frame');
+        iframe.contentWindow.document.open();
+        iframe.contentWindow.document.write(htmlContent);
+        iframe.contentWindow.document.close();
+
+        if (switchToResult) {
+            document.getElementById('btn-tab-result').click();
+        }
+    }
+
+    function switchRightTab(tabId, btnElement) {
+        document.querySelectorAll('.right-panel .tab-pane').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.right-panel .tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btnElement.classList.add('active');
+    }
+</script>
+
+</body>
+</html>
