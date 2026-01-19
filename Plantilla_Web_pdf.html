@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDE Educativo Multi-Archivo</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-editor: #272822;
+            --bg-panel: #f4f4f4;
+            --primary: #007bff;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --tab-active-bg: #272822; 
+            --tab-inactive-bg: #3c3c3c;
+            --text-light: #cccccc;
+            --border: #444;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        .container { display: flex; height: 100vh; }
+
+        /* --- PANEL IZQUIERDO (EDITOR) --- */
+        .left-panel { width: 50%; display: flex; flex-direction: column; background-color: var(--bg-dark); border-right: 2px solid #444; }
+        
+        .toolbar {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #252526; padding: 0 10px; height: 40px; border-bottom: 1px solid #111;
+        }
+        
+        .file-tabs { display: flex; align-items: flex-end; height: 100%; overflow-x: auto; flex-grow: 1; margin-right: 10px;}
+        
+        .file-tab {
+            background-color: var(--tab-inactive-bg);
+            color: #999;
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-right: 1px solid #252526;
+            display: flex; align-items: center;
+            height: 100%;
+            box-sizing: border-box;
+            white-space: nowrap;
+        }
+        .file-tab.active {
+            background-color: var(--tab-active-bg);
+            color: white;
+            border-top: 2px solid var(--primary);
+        }
+        .file-tab:hover:not(.active) { background-color: #444; color: white; }
+
+        /* Botones de acción */
+        .actions { display: flex; gap: 8px; }
+
+        .btn {
+            border: none; padding: 5px 12px; border-radius: 3px; cursor: pointer;
+            font-size: 0.85rem; font-weight: bold; color: white;
+            display: flex; align-items: center; gap: 5px;
+            transition: background 0.2s;
+        }
+        .btn-run { background-color: #0e639c; }
+        .btn-run:hover { background-color: #1177bb; }
+        
+        .btn-pdf { background-color: #d32f2f; }
+        .btn-pdf:hover { background-color: #b71c1c; }
+
+        #editor { flex-grow: 1; }
+
+        /* --- PANEL DERECHO (INFO/RESULTADO) --- */
+        .right-panel { width: 50%; display: flex; flex-direction: column; background-color: var(--bg-panel); }
+        .tabs { display: flex; background-color: #e0e0e0; border-bottom: 1px solid #ccc; }
+        .tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-weight: 600; color: #555; }
+        .tab.active { background-color: var(--bg-panel); color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .tab-pane { display: none; height: 100%; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        .tab-pane.active { display: block; }
+        
+        #result-frame { width: 100%; height: 100%; border: none; background: white; }
+        .instructions-body { line-height: 1.6; color: #333; }
+        .instructions-body code { background: #eee; padding: 2px 5px; border-radius: 3px; color: #d63384; }
+
+        @media (max-width: 768px) { .container { flex-direction: column; } .left-panel, .right-panel { width: 100%; height: 50%; } }
+    </style>
+</head>
+<body>
+
+<div id="config-exercise-name" style="display: none;">Ejercicio 01 - Conectando Archivos</div>
+
+<script type="text/template" data-filename="index.html" data-mode="html">
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Escolar</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="card">
+        <h1>Mi Proyecto Web</h1>
+        <p id="mensaje">Estado: Esperando código...</p>
+        <button onclick="activar()">Click Aquí</button>
+    </div>
+
+    <script src="script.js"><\/script>
+
+</body>
+</html>
+</script>
+
+<script type="text/template" data-filename="style.css" data-mode="css">
+/* Modifica este CSS */
+body {
+    background-color: #eeee89;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+</script>
+
+<script type="text/template" data-filename="script.js" data-mode="javascript">
+function activar() {
+    let msg = document.getElementById('mensaje');
+    msg.innerText = "¡Código ejecutado con éxito!";
+    msg.style.color = "blue";
+    alert("¡Funciona!");
+}
+</script>
+
+<script id="template-instructions" type="text/template">
+    <h2>Entrega de Tarea</h2>
+    <p>Completa el ejercicio siguiendo estos pasos:</p>
+    <ol>
+        <li>Modifica el CSS para que el fondo sea de otro color.</li>
+        <li>Cambia el texto del mensaje en el JavaScript.</li>
+        <li>Verifica que funcione con el botón "Ejecutar".</li>
+        <li><strong>Finalmente:</strong> Haz clic en el botón rojo "Descargar PDF" para obtener un archivo con tu solución y subirlo a la plataforma.</li>
+    </ol>
+</script>
+
+<div class="container">
+    <div class="left-panel">
+        <div class="toolbar">
+            <div class="file-tabs" id="file-tabs-container">
+                </div>
+            <div class="actions">
+                <button class="btn btn-run" onclick="runCode()" title="Ver resultado en pantalla">&#9658; Ejecutar</button>
+                <button class="btn btn-pdf" onclick="downloadPDF()" title="Descargar código en PDF">📄 PDF</button>
+            </div>
+        </div>
+        <div id="editor"></div>
+    </div>
+
+    <div class="right-panel">
+        <div class="tabs">
+            <button class="tab active" onclick="switchRightTab('tab-instructions', this)">Instrucciones</button>
+            <button class="tab" onclick="switchRightTab('tab-result', this)" id="btn-tab-result">Resultado</button>
+        </div>
+        <div class="panel-content" style="flex-grow:1; position:relative;">
+            <div id="tab-instructions" class="tab-pane active">
+                <div id="instructions-content" class="instructions-body"></div>
+            </div>
+            <div id="tab-result" class="tab-pane" style="padding:0;">
+                <iframe id="result-frame"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- GESTIÓN DE ESTADO ---
+    let editor;
+    let files = {}; 
+    let activeFileName = "";
+
+    window.onload = function() {
+        initEditor();
+        loadFilesFromTemplates();
+        renderFileTabs();
+        loadInstructions();
+        
+        const firstFile = Object.keys(files)[0];
+        if(firstFile) switchFile(firstFile);
+
+        runCode(false); 
+    };
+
+    function initEditor() {
+        editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.setOptions({
+            fontSize: "14px", tabSize: 4, useSoftTabs: true, showPrintMargin: false
+        });
+    }
+
+    function loadFilesFromTemplates() {
+        const templates = document.querySelectorAll('script[data-filename]');
+        templates.forEach(tmpl => {
+            const name = tmpl.getAttribute('data-filename');
+            const mode = tmpl.getAttribute('data-mode');
+            const content = tmpl.innerHTML.replace(/^\n/, ''); 
+            
+            const session = ace.createEditSession(content);
+            session.setMode("ace/mode/" + mode);
+            session.setUseSoftTabs(true);
+            session.setTabSize(4);
+
+            files[name] = { mode: mode, session: session };
+        });
+    }
+
+    function renderFileTabs() {
+        const container = document.getElementById('file-tabs-container');
+        container.innerHTML = '';
+        
+        Object.keys(files).forEach(filename => {
+            const btn = document.createElement('div');
+            btn.className = 'file-tab';
+            btn.textContent = filename;
+            btn.onclick = () => switchFile(filename);
+            btn.dataset.name = filename;
+            container.appendChild(btn);
+        });
+    }
+
+    function switchFile(filename) {
+        activeFileName = filename;
+        editor.setSession(files[filename].session);
+        document.querySelectorAll('.file-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.name === filename);
+        });
+    }
+
+    function loadInstructions() {
+        const inst = document.getElementById('template-instructions').innerHTML;
+        document.getElementById('instructions-content').innerHTML = inst;
+    }
+
+    function runCode(switchToResult = true) {
+        if (!files['index.html']) return alert("Falta index.html");
+        
+        let htmlContent = files['index.html'].session.getValue();
+
+        Object.keys(files).forEach(filename => {
+            if (filename === 'index.html') return;
+            const content = files[filename].session.getValue();
+            let mimeType = filename.endsWith('.css') ? 'text/css' : 'text/javascript';
+            
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+
+            const regexHref = new RegExp(`href=["']${filename}["']`, 'g');
+            const regexSrc = new RegExp(`src=["']${filename}["']`, 'g');
+            
+            htmlContent = htmlContent.replace(regexHref, `href="${url}"`);
+            htmlContent = htmlContent.replace(regexSrc, `src="${url}"`);
+        });
+
+        const iframe = document.getElementById('result-frame');
+        iframe.contentWindow.document.open();
+        iframe.contentWindow.document.write(htmlContent);
+        iframe.contentWindow.document.close();
+
+        if (switchToResult) document.getElementById('btn-tab-result').click();
+    }
+
+    function switchRightTab(tabId, btnElement) {
+        document.querySelectorAll('.right-panel .tab-pane').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.right-panel .tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btnElement.classList.add('active');
+    }
+
+    // --- GENERACIÓN DE PDF ---
+    async function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Configuración
+        const exerciseName = document.getElementById('config-exercise-name').innerText.trim() || "Ejercicio Web";
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 15;
+        let y = 20;
+
+        // Título del Documento
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(40, 40, 40);
+        doc.text(exerciseName, margin, y);
+        y += 10;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Fecha: ${new Date().toLocaleString()}`, margin, y);
+        y += 15;
+
+        // Iterar sobre cada archivo
+        for (const [filename, fileData] of Object.entries(files)) {
+            // Verificar si necesitamos nueva página para el título del archivo
+            if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+
+            // Encabezado del archivo (Nombre del archivo)
+            doc.setFillColor(230, 230, 230); // Fondo gris claro para el nombre
+            doc.rect(margin, y - 6, pageWidth - (margin * 2), 8, 'F');
+            
+            doc.setFont("courier", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(filename, margin + 2, y);
+            y += 10;
+
+            // Contenido del código
+            const codeContent = fileData.session.getValue();
+            doc.setFont("courier", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(50, 50, 50);
+
+            // Dividir texto para que quepa en el ancho
+            const splitText = doc.splitTextToSize(codeContent, pageWidth - (margin * 2));
+
+            // Imprimir líneas controlando el salto de página
+            for (let i = 0; i < splitText.length; i++) {
+                if (y > pageHeight - 15) {
+                    doc.addPage();
+                    y = 20;
+                }
+                doc.text(splitText[i], margin, y);
+                y += 5; // Espaciado entre líneas
+            }
+            
+            y += 10; // Espacio entre archivos
+        }
+
+        // Guardar archivo
+        // Limpiamos el nombre para que sea seguro en nombres de archivo
+        const cleanName = exerciseName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        doc.save(`${cleanName}_solucion.pdf`);
+    }
+</script>
+
+</body>
+</html>
