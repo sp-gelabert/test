@@ -47,13 +47,21 @@
     <!--...................................................................................................-->
 <textarea id="initial-code" style="display: none;">
 # EJERCICIO 37
-# Definición de las funciones (copia y pega aquí tus funciones)
+# Definición de las funciones
 def agregar_tarea(tareas, tarea_nueva):
-    pass
+    # Si la cadena está vacía, la nueva tarea es la única
+    if tareas == "":
+        return tarea_nueva
+    # Si ya hay tareas, concatenamos con coma y espacio
+    return tareas + ", " + tarea_nueva
 
 def mostrar_tareas(tareas):
-    pass
-
+    # Verificamos si la cadena tiene contenido
+    if tareas == "":
+        print("No hay tareas")
+    else:
+        print(tareas)
+        
 def eliminar_tarea(tareas, tarea_a_borrar):
     pass
 
@@ -61,28 +69,17 @@ def eliminar_tarea(tareas, tarea_a_borrar):
 
 print("--- Gestión de Tareas ---")
 
-# 1. Creamos una cadena de tareas vacía
-mis_tareas = ""
-print(f"Lista inicial: '{mis_tareas}'")
+lista_tareas = ""
+lista_tareas = agregar_tarea(lista_tareas, "Comprar pan")
+lista_tareas = agregar_tarea(lista_tareas, "Estudiar Python")
+lista_tareas = agregar_tarea(lista_tareas, "Lavar ropa")
 
-# 2. Agregamos algunas tareas
-print("\n>>> Agregando tareas...")
-mis_tareas = agregar_tarea(mis_tareas, "Estudiar Python")
-#Por teclado
-mis_tareas = agregar_tarea(mis_tareas, input("Ingrese una tarea"))
+print("Lista actual:")
+mostrar_tareas(lista_tareas) # Salida: Comprar pan, Estudiar Python, Lavar ropa
 
-# 3. Mostramos la lista de tareas
-print(">>> Mostrando tareas:")
-mostrar_tareas(mis_tareas) # Debería imprimir: Estudiar Python, Hacer ejercicio, Comprar pan
-
-# 4. Intentamos eliminar una tarea
-mis_tareas = eliminar_tarea(mis_tareas, input("\n>>> Escribe para eliminard 'Estudiar Python'..."))
-
-# 5. Mostramos la lista de nuevo
-print(">>> Mostrando tareas después de eliminar:")
-mostrar_tareas(mis_tareas) # Debería imprimir: Estudiar Python, Comprar pan
-
-#Si necesitas mas pruebas copia y pega los pasos del 2 al 5 
+print("agreguemos una tarea\n")
+lista_tareas = agregar_tarea(lista_tareas,input("Ingrese una tarea:"))
+mostrar_tareas(lista_tareas)  
 </textarea>
     <!--...................................................................................................-->
     <!--...................................................................................................-->
